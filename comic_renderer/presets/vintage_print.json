@@ -3,8 +3,8 @@
     "description": "Aged print style with a warm sepia tone, paper texture, and heavy vignette border shading.",
     "version": "2.0",
     "pipeline": [
-        {"filter": "clahe",       "params": {"clip_limit": 1.8, "tile_grid_size": [8, 8]}},
-        {"filter": "tonecurve",   "params": {"points": [[0, 0], [64, 40], [128, 120], [192, 210], [255, 255]]}},
+        {"filter": "clahe",       "params": {"clip_limit": 4.5, "tile_grid_size": [16, 16]}},
+        {"filter": "tonecurve",   "params": {"points": [[0, 0], [20, 60], [64, 100], [128, 150], [192, 220], [255, 255]]}},
         {"filter": "texture",     "params": {"mode": "paper", "strength": 0.18, "seed": 42}},
         {"filter": "vignette",    "params": {"strength": 0.45, "radius": 1.1, "color": [45, 30, 15]}},
         {"filter": "blend",       "params": {"mode": "soft_light", "strength": 0.35}}

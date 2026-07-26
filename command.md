@@ -109,6 +109,16 @@ Disables the tqdm progress bar to output step-by-step filter execution latency l
 python3 bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel --overwrite --verbose
 ```
 
+### Background Removal Integration
+Leverages the `withoutbg` library to automatically remove the background from images prior to running the style filters:
+```bash
+# Remove background and composite onto a white background (default)
+python3 bis_comic_main.py --storypath images/scene/story1 --preset woodcut --overwrite --remove-bg
+
+# Remove background and composite onto a black background
+python3 bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel --overwrite --remove-bg --bg-color black
+```
+
 ---
 
 ## 5. Programmatic API Run

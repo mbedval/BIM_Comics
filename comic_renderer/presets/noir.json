@@ -4,7 +4,8 @@
     "version": "2.0",
     "pipeline": [
         {"filter": "grayscale",   "params": {"method": "luminance"}},
-        {"filter": "clahe",       "params": {"clip_limit": 1.5, "tile_grid_size": [4, 4]}},
+        {"filter": "clahe",       "params": {"clip_limit": 4.0, "tile_grid_size": [8, 8]}},
+        {"filter": "tonecurve",   "params": {"points": [[0, 0], [20, 80], [45, 105], [90, 120], [150, 160], [255, 255]]}},
         {"filter": "edge",        "params": {"method": "canny", "low_threshold": 20, "high_threshold": 70, "blend_strength": 1.0}},
         {"filter": "contrast",    "params": {"alpha": 1.8, "beta": -20}},
         {"filter": "morphology",  "params": {"operation": "dilate", "kernel_size": 2, "iterations": 1, "kernel_shape": "ellipse"}},

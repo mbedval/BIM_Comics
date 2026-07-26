@@ -139,6 +139,18 @@ def build_parser() -> argparse.ArgumentParser:
         default=1,
         help="Number of parallel worker processes. 0 means use all available CPUs.",
     )
+    parser.add_argument(
+        "--remove-bg",
+        action="store_true",
+        default=False,
+        help="Remove background using withoutbg package before rendering.",
+    )
+    parser.add_argument(
+        "--bg-color",
+        choices=["white", "black"],
+        default="white",
+        help="Background fill color if background is removed (default: white).",
+    )
 
     # --- Informational ---
     parser.add_argument(
@@ -249,6 +261,8 @@ def _build_run_config(args: argparse.Namespace) -> RunConfig:
         logging=logging_config,
         preset_name=args.preset,
         jobs=args.jobs,
+        remove_bg=args.remove_bg,
+        bg_color=args.bg_color,
     )
 
 
@@ -333,7 +347,20 @@ def _process_image_worker(
         executor = PipelineExecutor(registry=registry)
         writer = ImageWriter(io_config=run_config.io)
 
-        image = load_image(img_path)
+        if run_config.remove_bg:
+            from PIL import Image
+            from withoutbg import WithoutBG
+            import numpy as np
+            
+            model = WithoutBG.open_weights()
+            rgba = model.remove_background(img_path)
+            bg_val = (255, 255, 255, 255) if run_config.bg_color == "white" else (0, 0, 0, 255)
+            solid_bg = Image.new("RGBA", rgba.size, bg_val)
+            composed = Image.alpha_composite(solid_bg, rgba)
+            image = np.array(composed.convert("RGB"))
+        else:
+            image = load_image(img_path)
+
         processed = executor.run(image, preset)
         output_path = writer.write(processed, img_path)
         elapsed = time.perf_counter() - start_time
@@ -376,6 +403,17 @@ def process_story(run_config: RunConfig) -> int:
     logger.info(
         "Preset loaded: '%s' (%d step(s)).", preset.name, len(preset.steps)
     )
+
+    # --- Verify background removal dependency early if requested ---
+    if run_config.remove_bg:
+        try:
+            import withoutbg
+        except ImportError:
+            logger.error(
+                "The 'withoutbg' package is required for background removal. "
+                "Please install it using: pip install withoutbg"
+            )
+            return 1
 
     # --- Build the filter registry and executor ---
     registry = _build_registry()
@@ -476,7 +514,19 @@ def process_story(run_config: RunConfig) -> int:
                     try:
                         # LOAD
                         logger.debug("  → Loading …")
-                        image = load_image(img_path)
+                        if run_config.remove_bg:
+                            from PIL import Image
+                            from withoutbg import WithoutBG
+                            import numpy as np
+                            
+                            model = WithoutBG.open_weights()
+                            rgba = model.remove_background(img_path)
+                            bg_val = (255, 255, 255, 255) if run_config.bg_color == "white" else (0, 0, 0, 255)
+                            solid_bg = Image.new("RGBA", rgba.size, bg_val)
+                            composed = Image.alpha_composite(solid_bg, rgba)
+                            image = np.array(composed.convert("RGB"))
+                        else:
+                            image = load_image(img_path)
 
                         # PIPELINE
                         logger.debug("  → Running pipeline (%d step(s)) …", len(preset.steps))

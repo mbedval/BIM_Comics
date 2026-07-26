@@ -48,6 +48,8 @@ python bis_comic_main.py --storypath images/scene/story1 --preset noir --overwri
 | `--verbose` | | `False` | Enable DEBUG level console logging (disables progress bar). |
 | `--list-presets` | | `False` | List all discovered preset names and exit. |
 | `--jobs INT` | `-j` | `1` | Number of parallel worker processes. `0` uses all available CPUs. |
+| `--remove-bg` | | `False` | Remove background using `withoutbg` package before rendering. |
+| `--bg-color COLOR`| | `white` | Background fill color: `white` or `black` (default: `white`). |
 
 ---
 
