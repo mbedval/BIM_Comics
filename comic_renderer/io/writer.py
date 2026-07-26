@@ -38,14 +38,17 @@ class ImageWriter:
     def __init__(self, io_config: IOConfig) -> None:
         self._io_config = io_config
 
-    def _resolve_output_path(self, source_path: Path) -> Path:
+    def _resolve_output_path(self, source_path: Path, suffix: str | None = None) -> Path:
         """Return the output path for *source_path*, always using ``.png``."""
+        stem = source_path.stem
+        if suffix:
+            stem += suffix
         return (
             self._io_config.output_story_dir()
-            / (source_path.stem + _PNG_EXTENSION)
+            / (stem + _PNG_EXTENSION)
         )
 
-    def write(self, image: np.ndarray, source_path: Path) -> Path:
+    def write(self, image: np.ndarray, source_path: Path, suffix: str | None = None) -> Path:
         """Write *image* to disk and return the output path.
 
         Parameters
@@ -54,6 +57,8 @@ class ImageWriter:
             RGB ``uint8`` array with shape ``(H, W, 3)``.
         source_path:
             Path of the *source* image (used to derive the output filename).
+        suffix:
+            Optional suffix to append to the output filename (before the extension).
 
         Returns
         -------
@@ -65,7 +70,7 @@ class ImageWriter:
         RuntimeError
             When OpenCV fails to encode/write the file.
         """
-        output_path = self._resolve_output_path(source_path)
+        output_path = self._resolve_output_path(source_path, suffix=suffix)
 
         if output_path.exists() and not self._io_config.overwrite:
             logger.warning(
@@ -77,8 +82,11 @@ class ImageWriter:
         # Ensure parent directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        # RGB → BGR for OpenCV
-        bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        # RGB(A) → BGR(A) for OpenCV
+        if len(image.shape) == 3 and image.shape[2] == 4:
+            bgr = cv2.cvtColor(image, cv2.COLOR_RGBA2BGRA)
+        else:
+            bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
         success = cv2.imwrite(str(output_path), bgr)
         if not success:

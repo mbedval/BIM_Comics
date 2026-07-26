@@ -2,7 +2,7 @@
 
 Usage
 -----
-    python bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel
+    python bis_comic_main.py --storypath images/scene/story1 --preset noir
 
 Run ``python bis_comic_main.py --help`` for the full option reference.
 """
@@ -49,7 +49,6 @@ from comic_renderer.utils.logging_config import setup_logging
 # ---------------------------------------------------------------------------
 
 _DEFAULT_OUTPUT_ROOT = Path("images/output")
-_DEFAULT_PRESET = "graphic_novel"
 
 # ---------------------------------------------------------------------------
 # Paths
@@ -86,7 +85,7 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            "  python bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel\n"
+            "  python bis_comic_main.py --storypath images/scene/story1 --preset noir\n"
             "  python bis_comic_main.py --list-presets\n"
         ),
     )
@@ -101,11 +100,11 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--preset",
         metavar="NAME",
-        default=_DEFAULT_PRESET,
+        default=None,
         help=(
-            f"Name of the rendering preset to apply "
-            f"(default: {_DEFAULT_PRESET!r}). "
-            f"Use --list-presets to see all available presets."
+            "Name of the rendering preset to apply. "
+            "If not specified, all available presets will be run, "
+            "and output filenames will be suffixed with '_<preset_name>'."
         ),
     )
     parser.add_argument(
@@ -147,9 +146,8 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--bg-color",
-        choices=["white", "black"],
-        default="white",
-        help="Background fill color if background is removed (default: white).",
+        default="transparent",
+        help="Background fill color if background is removed (hex code, color name, or 'transparent') (default: transparent).",
     )
 
     # --- Informational ---
@@ -225,7 +223,7 @@ def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) ->
     except FileNotFoundError:
         available = []
 
-    if args.preset not in available:
+    if args.preset is not None and args.preset not in available:
         parser.error(
             f"Unknown preset {args.preset!r}. "
             f"Available presets: {available}. "
@@ -297,6 +295,7 @@ def _build_registry() -> FilterRegistry:
     registry.register(ToneCurveFilter)
     registry.register(VignetteFilter)
     registry.register(HalftoneFilter)
+
     return registry
 
 
@@ -328,6 +327,7 @@ def _process_image_worker(
     img_path: Path,
     run_config: RunConfig,
     preset_name: str,
+    suffix: str | None = None,
 ) -> tuple[str, bool, str | None, float]:
     """Worker process target to run the pipeline on a single image.
 
@@ -348,21 +348,51 @@ def _process_image_worker(
         writer = ImageWriter(io_config=run_config.io)
 
         if run_config.remove_bg:
-            from PIL import Image
+            from PIL import Image, ImageColor
             from withoutbg import WithoutBG
             import numpy as np
             
             model = WithoutBG.open_weights()
             rgba = model.remove_background(img_path)
-            bg_val = (255, 255, 255, 255) if run_config.bg_color == "white" else (0, 0, 0, 255)
-            solid_bg = Image.new("RGBA", rgba.size, bg_val)
-            composed = Image.alpha_composite(solid_bg, rgba)
-            image = np.array(composed.convert("RGB"))
+            
+            # Save original alpha mask
+            alpha = np.array(rgba)[:, :, 3]
+            
+            # 1. Composite over solid white background for clean pipeline processing
+            white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+            composed_temp = Image.alpha_composite(white_bg, rgba)
+            image_temp = np.array(composed_temp.convert("RGB"))
+            
+            # 2. Run pipeline
+            processed_rgb = executor.run(image_temp, preset)
+            
+            # 3. Handle background color
+            bg_color_str = run_config.bg_color
+            if bg_color_str == "transparent":
+                processed = np.dstack((processed_rgb, alpha))
+            else:
+                # Re-apply alpha mask to the processed foreground
+                processed_rgba = Image.fromarray(np.dstack((processed_rgb, alpha)))
+                # Get custom background color value
+                if bg_color_str == "black":
+                    bg_val = (0, 0, 0, 255)
+                elif bg_color_str == "white":
+                    bg_val = (255, 255, 255, 255)
+                else:
+                    try:
+                        rgb = ImageColor.getrgb(bg_color_str)
+                        bg_val = rgb + (255,) if len(rgb) == 3 else rgb
+                    except ValueError:
+                        bg_val = (255, 255, 255, 255)
+                # Composite processed foreground over the custom background color
+                solid_bg = Image.new("RGBA", rgba.size, bg_val)
+                final_img = Image.alpha_composite(solid_bg, processed_rgba)
+                processed = np.array(final_img.convert("RGB"))
         else:
             image = load_image(img_path)
+            processed = executor.run(image, preset)
 
-        processed = executor.run(image, preset)
-        output_path = writer.write(processed, img_path)
+        output_path = writer.write(processed, img_path, suffix=suffix)
         elapsed = time.perf_counter() - start_time
         return img_path.name, True, str(output_path.name), elapsed
     except Exception as exc:
@@ -393,16 +423,21 @@ def process_story(run_config: RunConfig) -> int:
     logger.info("Preset      : %s", run_config.preset_name)
     logger.info("Overwrite   : %s", io_cfg.overwrite)
 
-    # --- Load preset (fail fast before discovering images) ---
-    try:
-        preset = _load_preset(run_config.preset_name)
-    except (FileNotFoundError, ValueError) as exc:
-        logger.error("Failed to load preset '%s': %s", run_config.preset_name, exc)
-        return 1
+    # Determine presets to run
+    if run_config.preset_name is None:
+        try:
+            loader = PresetLoader(presets_dir=_PRESETS_DIR)
+            presets_to_run = loader.list_available()
+        except FileNotFoundError:
+            presets_to_run = []
+        is_multi = True
+    else:
+        presets_to_run = [run_config.preset_name]
+        is_multi = False
 
-    logger.info(
-        "Preset loaded: '%s' (%d step(s)).", preset.name, len(preset.steps)
-    )
+    if not presets_to_run:
+        logger.error("No presets found to run.")
+        return 1
 
     # --- Verify background removal dependency early if requested ---
     if run_config.remove_bg:
@@ -447,118 +482,165 @@ def process_story(run_config: RunConfig) -> int:
 
     use_parallel = num_workers > 1 and num_images > 1
 
-    if use_parallel:
-        logger.info("Spawning %d worker process(es) for parallel rendering.", num_workers)
-        
-        with tqdm(
-            total=num_images,
-            desc="Processing story",
-            disable=run_config.logging.verbose,
-            unit="img",
-        ) as pbar:
-            with logging_redirect_tqdm():
-                with ProcessPoolExecutor(max_workers=num_workers) as pool:
-                    futures = {
-                        pool.submit(
-                            _process_image_worker,
-                            img_path,
-                            run_config,
-                            run_config.preset_name
-                        ): img_path
-                        for img_path in image_paths
-                    }
-                    
-                    for idx, future in enumerate(as_completed(futures), start=1):
-                        img_name, success, detail, elapsed = future.result()
-                        pbar.update(1)
+    for preset_name in presets_to_run:
+        suffix = f"_{preset_name}" if is_multi else None
+        logger.info("Running preset: %s", preset_name)
+
+        try:
+            preset = _load_preset(preset_name)
+        except (FileNotFoundError, ValueError) as exc:
+            logger.error("Failed to load preset '%s': %s", preset_name, exc)
+            errors.append(f"{preset_name}: {exc}")
+            continue
+
+        logger.info(
+            "Preset loaded: '%s' (%d step(s)).", preset.name, len(preset.steps)
+        )
+
+        if use_parallel:
+            logger.info("Spawning %d worker process(es) for parallel rendering.", num_workers)
+            
+            with tqdm(
+                total=num_images,
+                desc=f"Story ({preset_name})",
+                disable=run_config.logging.verbose,
+                unit="img",
+            ) as pbar:
+                with logging_redirect_tqdm():
+                    with ProcessPoolExecutor(max_workers=num_workers) as pool:
+                        futures = {
+                            pool.submit(
+                                _process_image_worker,
+                                img_path,
+                                run_config,
+                                preset_name,
+                                suffix
+                            ): img_path
+                            for img_path in image_paths
+                        }
                         
-                        if success:
-                            logger.info(
-                                "[%d/%d] ✓ Processed '%s' → '%s' (%.2fs)",
-                                idx,
-                                num_images,
-                                img_name,
-                                detail,
-                                elapsed,
-                            )
-                        else:
-                            logger.error(
-                                "[%d/%d] ✗ Pipeline error for '%s': %s",
-                                idx,
-                                num_images,
-                                img_name,
-                                detail,
-                            )
-                            errors.append(detail)
-    else:
-        # Sequential processing
-        writer = ImageWriter(io_config=io_cfg)
-        with tqdm(
-            total=num_images,
-            desc="Processing story",
-            disable=run_config.logging.verbose,
-            unit="img",
-        ) as pbar:
-            with logging_redirect_tqdm():
-                for idx, img_path in enumerate(image_paths, start=1):
-                    if run_config.logging.verbose:
-                        logger.info(
-                            "[%d/%d] Processing '%s' with preset '%s' …",
-                            idx,
-                            num_images,
-                            img_path.name,
-                            run_config.preset_name,
-                        )
-                    img_start = time.perf_counter()
-
-                    try:
-                        # LOAD
-                        logger.debug("  → Loading …")
-                        if run_config.remove_bg:
-                            from PIL import Image
-                            from withoutbg import WithoutBG
-                            import numpy as np
+                        for idx, future in enumerate(as_completed(futures), start=1):
+                            img_name, success, detail, elapsed = future.result()
+                            pbar.update(1)
                             
-                            model = WithoutBG.open_weights()
-                            rgba = model.remove_background(img_path)
-                            bg_val = (255, 255, 255, 255) if run_config.bg_color == "white" else (0, 0, 0, 255)
-                            solid_bg = Image.new("RGBA", rgba.size, bg_val)
-                            composed = Image.alpha_composite(solid_bg, rgba)
-                            image = np.array(composed.convert("RGB"))
-                        else:
-                            image = load_image(img_path)
+                            if success:
+                                logger.info(
+                                    "[%d/%d] ✓ Processed '%s' (preset: %s) → '%s' (%.2fs)",
+                                    idx,
+                                    num_images,
+                                    img_name,
+                                    preset_name,
+                                    detail,
+                                    elapsed,
+                                )
+                            else:
+                                logger.error(
+                                    "[%d/%d] ✗ Pipeline error for '%s' (preset: %s): %s",
+                                    idx,
+                                    num_images,
+                                    img_name,
+                                    preset_name,
+                                    detail,
+                                )
+                                errors.append(f"{preset_name}/{img_name}: {detail}")
+        else:
+            # Sequential processing
+            writer = ImageWriter(io_config=io_cfg)
+            with tqdm(
+                total=num_images,
+                desc=f"Story ({preset_name})",
+                disable=run_config.logging.verbose,
+                unit="img",
+            ) as pbar:
+                with logging_redirect_tqdm():
+                    for idx, img_path in enumerate(image_paths, start=1):
+                        if run_config.logging.verbose:
+                            logger.info(
+                                "[%d/%d] Processing '%s' with preset '%s' …",
+                                idx,
+                                num_images,
+                                img_path.name,
+                                preset_name,
+                            )
+                        img_start = time.perf_counter()
 
-                        # PIPELINE
-                        logger.debug("  → Running pipeline (%d step(s)) …", len(preset.steps))
-                        processed = executor.run(image, preset)
+                        try:
+                            # LOAD
+                            logger.debug("  → Loading …")
+                            if run_config.remove_bg:
+                                from PIL import Image, ImageColor
+                                from withoutbg import WithoutBG
+                                import numpy as np
+                                
+                                model = WithoutBG.open_weights()
+                                rgba = model.remove_background(img_path)
+                                
+                                # Save original alpha mask
+                                alpha = np.array(rgba)[:, :, 3]
+                                
+                                # 1. Composite over solid white background for clean pipeline processing
+                                white_bg = Image.new("RGBA", rgba.size, (255, 255, 255, 255))
+                                composed_temp = Image.alpha_composite(white_bg, rgba)
+                                image_temp = np.array(composed_temp.convert("RGB"))
+                                
+                                # 2. Run pipeline
+                                logger.debug("  → Running pipeline (%d step(s)) …", len(preset.steps))
+                                processed_rgb = executor.run(image_temp, preset)
+                                
+                                # 3. Handle background color
+                                bg_color_str = run_config.bg_color
+                                if bg_color_str == "transparent":
+                                    processed = np.dstack((processed_rgb, alpha))
+                                else:
+                                    # Re-apply alpha mask to the processed foreground
+                                    processed_rgba = Image.fromarray(np.dstack((processed_rgb, alpha)))
+                                    # Get custom background color value
+                                    if bg_color_str == "black":
+                                        bg_val = (0, 0, 0, 255)
+                                    elif bg_color_str == "white":
+                                        bg_val = (255, 255, 255, 255)
+                                    else:
+                                        try:
+                                            rgb = ImageColor.getrgb(bg_color_str)
+                                            bg_val = rgb + (255,) if len(rgb) == 3 else rgb
+                                        except ValueError:
+                                            bg_val = (255, 255, 255, 255)
+                                    # Composite processed foreground over the custom background color
+                                    solid_bg = Image.new("RGBA", rgba.size, bg_val)
+                                    final_img = Image.alpha_composite(solid_bg, processed_rgba)
+                                    processed = np.array(final_img.convert("RGB"))
+                            else:
+                                image = load_image(img_path)
+                                # PIPELINE
+                                logger.debug("  → Running pipeline (%d step(s)) …", len(preset.steps))
+                                processed = executor.run(image, preset)
 
-                        # SAVE
-                        logger.debug("  → Saving …")
-                        output_path = writer.write(processed, img_path)
-                        elapsed = time.perf_counter() - img_start
-                        logger.info(
-                            "  ✓ Saved '%s' (%.2fs)", output_path.name, elapsed
-                        )
+                            # SAVE
+                            logger.debug("  → Saving …")
+                            output_path = writer.write(processed, img_path, suffix=suffix)
+                            elapsed = time.perf_counter() - img_start
+                            logger.info(
+                                "  ✓ Saved '%s' (%.2fs)", output_path.name, elapsed
+                            )
 
-                    except FileNotFoundError as exc:
-                        logger.error("  ✗ Load error for '%s': %s", img_path.name, exc)
-                        errors.append(str(exc))
-                    except ValueError as exc:
-                        logger.error("  ✗ Decode/pipeline error for '%s': %s", img_path.name, exc)
-                        errors.append(str(exc))
-                    except KeyError as exc:
-                        logger.error("  ✗ Pipeline config error for '%s': %s", img_path.name, exc)
-                        errors.append(str(exc))
-                    except RuntimeError as exc:
-                        logger.error("  ✗ Write error for '%s': %s", img_path.name, exc)
-                        errors.append(str(exc))
-                    
-                    pbar.update(1)
+                        except FileNotFoundError as exc:
+                            logger.error("  ✗ Load error for '%s': %s", img_path.name, exc)
+                            errors.append(f"{preset_name}/{img_path.name}: {exc}")
+                        except ValueError as exc:
+                            logger.error("  ✗ Decode/pipeline error for '%s': %s", img_path.name, exc)
+                            errors.append(f"{preset_name}/{img_path.name}: {exc}")
+                        except KeyError as exc:
+                            logger.error("  ✗ Pipeline config error for '%s': %s", img_path.name, exc)
+                            errors.append(f"{preset_name}/{img_path.name}: {exc}")
+                        except RuntimeError as exc:
+                            logger.error("  ✗ Write error for '%s': %s", img_path.name, exc)
+                            errors.append(f"{preset_name}/{img_path.name}: {exc}")
+                        
+                        pbar.update(1)
 
     total_elapsed = time.perf_counter() - total_start
     logger.info(
-        "Done. %d image(s) processed in %.2fs. %d error(s).",
-        num_images - len(errors),
+        "Done. Completed processing in %.2fs. %d error(s).",
         total_elapsed,
         len(errors),
     )

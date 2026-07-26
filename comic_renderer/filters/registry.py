@@ -82,6 +82,27 @@ class FilterRegistry:
         self._registry[name] = filter_class
         logger.debug("Registered filter: '%s' → %s", name, filter_class.__name__)
 
+    def register_alias(self, alias_name: str, filter_class: type[BaseFilter]) -> None:
+        """Register an alias name pointing to a filter class.
+
+        Parameters
+        ----------
+        alias_name:
+            The alias key to register.
+        filter_class:
+            A concrete subclass of :class:`BaseFilter`.
+        """
+        if not (isinstance(filter_class, type) and issubclass(filter_class, BaseFilter)):
+            raise TypeError(
+                f"Expected a BaseFilter subclass, got: {filter_class!r}"
+            )
+        if not alias_name:
+            raise ValueError("Alias name must not be empty.")
+        if alias_name in self._registry:
+            raise ValueError(f"Alias or filter '{alias_name}' is already registered.")
+        self._registry[alias_name] = filter_class
+        logger.debug("Registered alias: '%s' → %s", alias_name, filter_class.__name__)
+
     # ------------------------------------------------------------------
     # Factory
     # ------------------------------------------------------------------

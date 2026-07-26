@@ -42,7 +42,7 @@ class PresetConfig:
     Attributes
     ----------
     name:
-        Canonical preset name (e.g. ``"graphic_novel"``).
+        Canonical preset name (e.g. ``"noir"``).
     description:
         Human-readable description shown in ``--list-presets``.
     version:

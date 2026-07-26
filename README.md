@@ -31,7 +31,7 @@ The package provides a command-line script to batch-process folders of images (s
 
 ```bash
 # Basic usage
-python bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel
+python bis_comic_main.py --storypath images/scene/story1 --preset noir
 
 # Overwrite existing renders, process with 4 workers in parallel, print debug details
 python bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite --jobs 4 --verbose
@@ -42,7 +42,7 @@ python bis_comic_main.py --storypath images/scene/story1 --preset noir --overwri
 | Argument | Short | Default | Description |
 |---|---|---|---|
 | `--storypath DIR` | | (Required) | Directory containing input story images (`.jpg`, `.png`, etc.). |
-| `--preset NAME` | | `graphic_novel` | Processing preset configuration to apply. |
+| `--preset NAME` | | `None` | Processing preset configuration to apply. If not specified, runs all available presets and suffixes output filenames with `_<preset_name>`. |
 | `--output DIR` | | `images/output` | Destination output directory. |
 | `--overwrite` | | `False` | Overwrite existing output files (default skips processed images). |
 | `--verbose` | | `False` | Enable DEBUG level console logging (disables progress bar). |
@@ -58,15 +58,11 @@ python bis_comic_main.py --storypath images/scene/story1 --preset noir --overwri
 A preset is defined as a JSON configuration file inside the `comic_renderer/presets/` folder. It outlines an ordered sequence of filters with their corresponding parameters.
 
 Supported presets include:
-- `graphic_novel`: Realistic grayscale comic with local contrast, bilateral smoothing, Canny outlines, and overlay blending.
 - `noir`: Deep shadows, high contrast, heavy outlines, and multiply-blending.
 - `sin_city`: Extreme high-contrast black-and-white.
-- `manga_gray`: Clean manga lines and soft gray tones.
 - `newspaper`: Grayscale print look using rotated halftone screens.
 - `vintage_print`: Aged paper texture and warm sepia borders.
-- `ink_wash`: Smooth watercolor-like gradients with soft Sobel bounds.
 - `woodcut`: Coarse woodblock relief texture look.
-- `posterized`: Multi-level posterized pop art.
 - `pencil_comic`: Soft sketch-like look.
 
 ---

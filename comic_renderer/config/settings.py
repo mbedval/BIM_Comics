@@ -55,8 +55,8 @@ class RunConfig:
 
     io: IOConfig
     logging: LoggingConfig
-    preset_name: str
-    """Name of the JSON preset to apply (e.g. ``"graphic_novel"``)."""
+    preset_name: Optional[str]
+    """Name of the JSON preset to apply (e.g. ``"graphic_novel"``). When None, all presets are executed."""
 
     jobs: int = 1
     """Number of parallel worker processes. 0 means use all available CPUs."""

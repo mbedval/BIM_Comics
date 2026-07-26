@@ -40,10 +40,10 @@ class TestBuildParser:
         import argparse
         assert isinstance(build_parser(), argparse.ArgumentParser)
 
-    def test_default_preset_is_graphic_novel(self) -> None:
+    def test_default_preset_is_none(self) -> None:
         parser = build_parser()
         args = parser.parse_args(["--storypath", "/tmp/x"])
-        assert args.preset == "graphic_novel"
+        assert args.preset is None
 
     def test_default_overwrite_is_false(self) -> None:
         parser = build_parser()
@@ -78,7 +78,7 @@ class TestListPresets:
     ) -> None:
         main(["--list-presets"])
         output = capsys.readouterr().out
-        for name in ("graphic_novel", "noir", "manga_gray", "posterized", "pencil_comic"):
+        for name in ("noir", "pencil_comic"):
             assert name in output
 
 
@@ -97,7 +97,7 @@ class TestMainEndToEnd:
 
         exit_code = main([
             "--storypath", str(story),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
             "--output", str(output),
         ])
 
@@ -124,7 +124,7 @@ class TestMainEndToEnd:
         """A non-existent story path should return exit code 1."""
         exit_code = main([
             "--storypath", str(tmp_path / "ghost_story"),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
             "--output", str(tmp_path / "output"),
         ])
         assert exit_code == 1
@@ -143,7 +143,7 @@ class TestMainEndToEnd:
         main([
             "--storypath", str(story),
             "--output", str(output),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
         ])
         first_mtime = (output / "story3" / "001.png").stat().st_mtime
 
@@ -151,7 +151,7 @@ class TestMainEndToEnd:
         main([
             "--storypath", str(story),
             "--output", str(output),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
         ])
         second_mtime = (output / "story3" / "001.png").stat().st_mtime
         assert first_mtime == second_mtime  # Not touched
@@ -161,7 +161,7 @@ class TestMainEndToEnd:
         main([
             "--storypath", str(story),
             "--output", str(output),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
             "--overwrite",
         ])
         third_mtime = (output / "story3" / "001.png").stat().st_mtime
@@ -175,7 +175,31 @@ class TestMainEndToEnd:
 
         exit_code = main([
             "--storypath", str(story),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
             "--output", str(output),
         ])
         assert exit_code == 0
+
+    def test_no_preset_runs_all_presets_with_suffix(self, tmp_path: Path) -> None:
+        """When no --preset is specified, all presets should run with a filename suffix."""
+        story = tmp_path / "story_all"
+        _write_tiny_png(story / "001.png")
+        output = tmp_path / "output_all"
+
+        exit_code = main([
+            "--storypath", str(story),
+            "--output", str(output),
+            "--jobs", "1",
+        ])
+        assert exit_code == 0
+
+        # Discover available presets directly
+        from comic_renderer.bis_comic_main import _PRESETS_DIR
+        from comic_renderer.pipeline.preset_loader import PresetLoader
+        available = PresetLoader(presets_dir=_PRESETS_DIR).list_available()
+
+        # Check that output files exist for each preset with the suffix
+        for preset_name in available:
+            expected_file = output / "story_all" / f"001_{preset_name}.png"
+            assert expected_file.exists()
+

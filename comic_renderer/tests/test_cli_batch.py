@@ -58,7 +58,7 @@ class TestCLIJobsParser:
 
         args_defaults = parser.parse_args(["--storypath", "/tmp/x"])
         assert args_defaults.remove_bg is False
-        assert args_defaults.bg_color == "white"
+        assert args_defaults.bg_color == "transparent"
 
 
 
@@ -79,7 +79,7 @@ class TestMainParallelEndToEnd:
         # Run with jobs=2
         exit_code = main([
             "--storypath", str(story),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
             "--output", str(output),
             "--jobs", "2",
             "--overwrite"
