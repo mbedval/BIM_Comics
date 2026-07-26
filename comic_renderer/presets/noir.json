@@ -1,0 +1,14 @@
+{
+    "name": "noir",
+    "description": "Deep-shadow, high-contrast black-and-white style inspired by 1940s film noir. Emphasises darkness, dramatic ink lines, and heavy shadows.",
+    "version": "2.0",
+    "pipeline": [
+        {"filter": "grayscale",   "params": {"method": "luminance"}},
+        {"filter": "clahe",       "params": {"clip_limit": 1.5, "tile_grid_size": [4, 4]}},
+        {"filter": "edge",        "params": {"method": "canny", "low_threshold": 20, "high_threshold": 70, "blend_strength": 1.0}},
+        {"filter": "contrast",    "params": {"alpha": 1.8, "beta": -20}},
+        {"filter": "morphology",  "params": {"operation": "dilate", "kernel_size": 2, "iterations": 1, "kernel_shape": "ellipse"}},
+        {"filter": "blend",       "params": {"mode": "multiply", "strength": 0.4}},
+        {"filter": "sharpen",     "params": {"strength": 0.6, "kernel_size": 5, "sigma": 1.2}}
+    ]
+}

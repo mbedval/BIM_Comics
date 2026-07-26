@@ -1,0 +1,13 @@
+{
+    "name": "ink_wash",
+    "description": "Soft ink wash painting effect with heavy edge-preserving smoothing and subtle outlines.",
+    "version": "2.0",
+    "pipeline": [
+        {"filter": "grayscale",   "params": {"method": "luminance"}},
+        {"filter": "clahe",       "params": {"clip_limit": 2.5, "tile_grid_size": [8, 8]}},
+        {"filter": "bilateral",   "params": {"diameter": 11, "sigma_color": 100.0, "sigma_space": 100.0, "iterations": 4}},
+        {"filter": "edge",        "params": {"method": "sobel", "ksize": 5, "blend_strength": 0.45, "blur_radius": 2}},
+        {"filter": "contrast",    "params": {"alpha": 1.15, "beta": 5}},
+        {"filter": "blend",       "params": {"mode": "multiply", "strength": 0.25}}
+    ]
+}

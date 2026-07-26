@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "bis-comic-renderer"
+version = "0.1.0"
+description = "Classical computer-vision comic renderer – no AI image generation."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+authors = [{ name = "BIS Comic Renderer Contributors" }]
+keywords = ["comic", "computer-vision", "image-processing", "opencv"]
+classifiers = [
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Topic :: Multimedia :: Graphics",
+]
+dependencies = [
+    "opencv-python-headless>=4.8",
+    "numpy>=1.26",
+    "Pillow>=10.0",
+    "scikit-image>=0.22",
+    "tqdm>=4.66",
+]
+
+[project.scripts]
+bis-comic = "comic_renderer.bis_comic_main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["comic_renderer*"]
+
+[tool.pytest.ini_options]
+testpaths = ["comic_renderer/tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"

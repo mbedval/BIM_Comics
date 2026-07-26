@@ -1,0 +1,38 @@
+{
+  "name": "graphic_novel",
+  "pipeline": [
+    {
+      "filter": "grayscale"
+    },
+    {
+      "filter": "clahe",
+      "clip_limit": 3.5,
+      "tile_grid_size": [8, 8]
+    },
+    {
+      "filter": "bilateral",
+      "iterations": 3,
+      "diameter": 9,
+      "sigma_color": 100,
+      "sigma_space": 100
+    },
+    {
+      "filter": "posterize",
+      "levels": 5
+    },
+    {
+      "filter": "adaptive_edges",
+      "method": "gaussian",
+      "block_size": 9,
+      "c": 3
+    },
+    {
+      "filter": "blend_edges",
+      "strength": 0.8
+    },
+    {
+      "filter": "sharpen",
+      "amount": 1.2
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+    "name": "woodcut",
+    "description": "Engraved woodblock relief texture look with thick, high-contrast print shapes.",
+    "version": "2.0",
+    "pipeline": [
+        {"filter": "grayscale",   "params": {"method": "luminance"}},
+        {"filter": "clahe",       "params": {"clip_limit": 3.0, "tile_grid_size": [4, 4]}},
+        {"filter": "halftone",    "params": {"size": 4, "angle": 0.0, "blend_strength": 0.95}},
+        {"filter": "morphology",  "params": {"operation": "close", "kernel_size": 2, "kernel_shape": "rect"}},
+        {"filter": "edge",        "params": {"method": "canny", "low_threshold": 30, "high_threshold": 90, "blend_strength": 0.9}},
+        {"filter": "contrast",    "params": {"alpha": 1.6, "beta": -10}}
+    ]
+}

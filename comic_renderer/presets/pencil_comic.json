@@ -1,0 +1,14 @@
+{
+    "name": "pencil_comic",
+    "description": "Soft pencil-sketch look with light texture and subtle edges. Gives the impression of rough pencil artwork before inking.",
+    "version": "2.0",
+    "pipeline": [
+        {"filter": "grayscale",  "params": {"method": "luminance"}},
+        {"filter": "clahe",      "params": {"clip_limit": 2.5, "tile_grid_size": [8, 8]}},
+        {"filter": "edge",       "params": {"method": "sobel", "ksize": 3, "blend_strength": 0.6, "blur_radius": 1}},
+        {"filter": "sharpen",    "params": {"strength": 1.8, "kernel_size": 5, "sigma": 0.8}},
+        {"filter": "contrast",   "params": {"alpha": 1.1, "beta": 0}},
+        {"filter": "texture",    "params": {"mode": "paper", "strength": 0.15, "seed": 42}},
+        {"filter": "blend",      "params": {"mode": "soft_light", "strength": 0.3}}
+    ]
+}
