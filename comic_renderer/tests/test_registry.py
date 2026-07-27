@@ -144,3 +144,26 @@ class TestFilterRegistryIntrospection:
         assert len(registry) == 1
         registry.register(_make_filter_class("two"))
         assert len(registry) == 2
+
+    def test_register_alias(self) -> None:
+        registry = FilterRegistry()
+        cls = _make_filter_class("original")
+        registry.register(cls)
+        registry.register_alias("alias_name", cls)
+        assert registry.is_registered("alias_name")
+        instance = registry.create("alias_name")
+        assert isinstance(instance, cls)
+
+    def test_all_presets_are_valid_in_registry(self) -> None:
+        from comic_renderer.bis_comic_main import _build_registry, _PRESETS_DIR
+        from comic_renderer.pipeline.preset_loader import PresetLoader
+        registry = _build_registry()
+        loader = PresetLoader(presets_dir=_PRESETS_DIR)
+        for name in loader.list_available():
+            preset = loader.load(name)
+            # Ensure every step in the preset can be successfully instantiated by the registry
+            for step in preset.steps:
+                assert registry.is_registered(step.filter_name), f"Filter '{step.filter_name}' in preset '{name}' is not registered."
+                # Instantiate to verify validation passes
+                registry.create(step.filter_name, step.params)
+

@@ -28,29 +28,12 @@ python3 bis_comic_main.py --list-presets
 
 Below are the commands to execute each of the 10 presets. These commands will read images from `images/scene/story1`, render them, and output the resulting PNG files inside `images/output/story1/`.
 
-### 1. Graphic Novel Style (Default)
-Grayscale comic look with bilateral edge-preserving smoothing, CLAHE, Canny edges, paper texture, and overlay blending.
-```bash
-python3 bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel --overwrite
-```
-
 ### 2. Film Noir Style
 Deep-shadow, high-contrast B&W style inspired by 1940s film noir. Emphasizes dark shadows, morphology dilation, and multiply-blending.
 ```bash
 python3 bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite
 ```
 
-### 3. Manga Grayscale Style
-Crisp manga-inspired lines and screentone-ready contrast.
-```bash
-python3 bis_comic_main.py --storypath images/scene/story1 --preset manga_gray --overwrite
-```
-
-### 4. Pop-Art Posterized Style
-Reduced color palette using floor quantization with Andy Warhol pop-art style black borders and paper texture.
-```bash
-python3 bis_comic_main.py --storypath images/scene/story1 --preset posterized --overwrite
-```
 
 ### 5. Pencil Sketch Style
 Soft pencil look using a Sobel operator for outline rendering combined with coarse drawing paper textures.
@@ -76,16 +59,22 @@ Aged warm print using warm-toned sepia vignettes (`[45, 30, 15]`) and heavy pape
 python3 bis_comic_main.py --storypath images/scene/story1 --preset vintage_print --overwrite
 ```
 
-### 9. Fluid Ink Wash Style
-Watercolor wash effect obtained via deep bilateral filtering iterations (4 passes) and soft Sobel boundaries.
-```bash
-python3 bis_comic_main.py --storypath images/scene/story1 --preset ink_wash --overwrite
-```
-
 ### 10. Woodblock Woodcut Style
-Engraved relief style using a coarse halftone grid at 0 degrees and morphological closing to merge details.
+Coarse woodblock relief texture look.
 ```bash
 python3 bis_comic_main.py --storypath images/scene/story1 --preset woodcut --overwrite
+```
+
+### 11. Anime Style
+Hand-drawn animation style using AnimeGANv2 style transfer.
+```bash
+python3 bis_comic_main.py --storypath images/scene/story1 --preset anime --overwrite
+```
+
+### 12. Cartoon Style
+Stylized, painterly cartoon/comic illustrations using Satoshi Kon's Paprika style transfer.
+```bash
+python3 bis_comic_main.py --storypath images/scene/story1 --preset cartoon --overwrite
 ```
 
 ---
@@ -97,16 +86,26 @@ Test parallel processing and verbose execution parameters:
 ### Run with Specific Thread/Process Workers Count
 ```bash
 # Run in parallel using exactly 2 worker processes
-python3 bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel --overwrite --jobs 2
+python3 bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite --jobs 2
 
 # Run in parallel automatically using all available CPU cores
-python3 bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel --overwrite --jobs 0
+python3 bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite --jobs 0
 ```
 
 ### Run with Verbose/Debug Details
 Disables the tqdm progress bar to output step-by-step filter execution latency logs:
 ```bash
-python3 bis_comic_main.py --storypath images/scene/story1 --preset graphic_novel --overwrite --verbose
+python3 bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite --verbose
+```
+
+### Background Removal Integration
+Leverages the `withoutbg` library to automatically remove the background from images prior to running the style filters:
+```bash
+# Remove background and composite onto a white background (default)
+python3 bis_comic_main.py --storypath images/scene/story1 --preset woodcut --overwrite --remove-bg
+
+# Remove background and composite onto a black background
+python3 bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite --remove-bg --bg-color black
 ```
 
 ---

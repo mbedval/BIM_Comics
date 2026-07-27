@@ -15,7 +15,7 @@ Expected JSON schema
 .. code-block:: json
 
     {
-        "name": "graphic_novel",
+        "name": "noir",
         "description": "High-contrast black and white comic style.",
         "version": "1.0",
         "pipeline": [
@@ -79,7 +79,7 @@ class PresetLoader:
         Parameters
         ----------
         preset_name:
-            Bare name of the preset (e.g. ``"graphic_novel"``).  The loader
+            Bare name of the preset (e.g. ``"noir"``).  The loader
             appends ``.json`` automatically.
 
         Returns

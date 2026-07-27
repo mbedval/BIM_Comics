@@ -1,12 +1,13 @@
 {
     "name": "vintage_print",
-    "description": "Aged print style with a warm sepia tone, paper texture, and heavy vignette border shading.",
-    "version": "2.0",
+    "description": "Aged print style with a warm sepia tone, paper texture, and soft vignette border shading.",
+    "version": "2.1",
     "pipeline": [
-        {"filter": "clahe",       "params": {"clip_limit": 1.8, "tile_grid_size": [8, 8]}},
-        {"filter": "tonecurve",   "params": {"points": [[0, 0], [64, 40], [128, 120], [192, 210], [255, 255]]}},
-        {"filter": "texture",     "params": {"mode": "paper", "strength": 0.18, "seed": 42}},
-        {"filter": "vignette",    "params": {"strength": 0.45, "radius": 1.1, "color": [45, 30, 15]}},
-        {"filter": "blend",       "params": {"mode": "soft_light", "strength": 0.35}}
+        {"filter": "bilateral",   "params": {"diameter": 5, "sigma_color": 15.0, "sigma_space": 15.0}},
+        {"filter": "clahe",       "params": {"clip_limit": 1.5, "tile_grid_size": [8, 8]}},
+        {"filter": "tonecurve",   "params": {"points": [[0, 5], [64, 58], [128, 128], [192, 198], [255, 250]]}},
+        {"filter": "texture",     "params": {"mode": "paper", "strength": 0.09, "seed": 42}},
+        {"filter": "vignette",    "params": {"strength": 0.28, "radius": 1.25, "color": [45, 30, 15]}},
+        {"filter": "blend",       "params": {"mode": "soft_light", "strength": 0.20}}
     ]
 }

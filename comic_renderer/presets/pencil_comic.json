@@ -4,7 +4,8 @@
     "version": "2.0",
     "pipeline": [
         {"filter": "grayscale",  "params": {"method": "luminance"}},
-        {"filter": "clahe",      "params": {"clip_limit": 2.5, "tile_grid_size": [8, 8]}},
+        {"filter": "clahe",      "params": {"clip_limit": 4.5, "tile_grid_size": [16, 16]}},
+        {"filter": "tonecurve",  "params": {"points": [[0, 0], [20, 80], [45, 105], [90, 120], [150, 160], [255, 255]]}},
         {"filter": "edge",       "params": {"method": "sobel", "ksize": 3, "blend_strength": 0.6, "blur_radius": 1}},
         {"filter": "sharpen",    "params": {"strength": 1.8, "kernel_size": 5, "sigma": 0.8}},
         {"filter": "contrast",   "params": {"alpha": 1.1, "beta": 0}},

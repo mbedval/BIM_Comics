@@ -50,6 +50,17 @@ class TestCLIJobsParser:
             main(["--storypath", "/tmp/x", "--jobs", "-2"])
         assert excinfo.value.code == 2
 
+    def test_remove_bg_flags_parsed(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["--storypath", "/tmp/x", "--remove-bg", "--bg-color", "black"])
+        assert args.remove_bg is True
+        assert args.bg_color == "black"
+
+        args_defaults = parser.parse_args(["--storypath", "/tmp/x"])
+        assert args_defaults.remove_bg is False
+        assert args_defaults.bg_color == "transparent"
+
+
 
 # ---------------------------------------------------------------------------
 # End-to-end parallel integration tests
@@ -68,7 +79,7 @@ class TestMainParallelEndToEnd:
         # Run with jobs=2
         exit_code = main([
             "--storypath", str(story),
-            "--preset", "graphic_novel",
+            "--preset", "noir",
             "--output", str(output),
             "--jobs", "2",
             "--overwrite"

@@ -64,12 +64,12 @@ class TestPresetConfig:
     def test_stores_all_fields(self) -> None:
         steps = [FilterStep("passthrough")]
         cfg = PresetConfig(
-            name="graphic_novel",
+            name="noir",
             description="Test",
             version="1.0",
             steps=steps,
         )
-        assert cfg.name == "graphic_novel"
+        assert cfg.name == "noir"
         assert cfg.version == "1.0"
         assert len(cfg.steps) == 1
 
@@ -101,10 +101,10 @@ class TestPresetLoaderInit:
 
 class TestPresetLoaderLoad:
     def test_loads_valid_preset(self, tmp_path: Path) -> None:
-        _write_preset(tmp_path, "graphic_novel", _minimal_preset("graphic_novel"))
+        _write_preset(tmp_path, "noir", _minimal_preset("noir"))
         loader = PresetLoader(presets_dir=tmp_path)
-        cfg = loader.load("graphic_novel")
-        assert cfg.name == "graphic_novel"
+        cfg = loader.load("noir")
+        assert cfg.name == "noir"
         assert cfg.version == "1.0"
 
     def test_pipeline_steps_are_parsed(self, tmp_path: Path) -> None:
