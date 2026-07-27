@@ -1,0 +1,8 @@
+{
+    "name": "anime",
+    "description": "Style transfer preset converting images into hand-drawn anime styled illustrations using AnimeGANv2.",
+    "version": "1.0",
+    "pipeline": [
+        {"filter": "anime", "params": {}}
+    ]
+}

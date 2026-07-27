@@ -1,0 +1,19 @@
+{
+    "name": "cartoon",
+    "description": "Funny meme-style cartoon: bold flat colors, thick outlines, punchy saturation, and strong posterization.",
+    "version": "2.0",
+    "pipeline": [
+        {
+            "filter": "anime",
+            "params": {
+                "model_path": "comic_renderer/weights/AnimeGANv2_Paprika.onnx",
+                "model_url": "https://huggingface.co/vumichien/AnimeGANv2_Paprika/resolve/main/AnimeGANv2_Paprika.onnx"
+            }
+        },
+        {"filter": "posterize",  "params": {"levels": 6}},
+        {"filter": "saturation", "params": {"scale": 1.75}},
+        {"filter": "contrast",   "params": {"alpha": 1.3, "beta": 5}},
+        {"filter": "edge",       "params": {"method": "canny", "low_threshold": 30, "high_threshold": 90, "blend_strength": 0.85, "blur_radius": 1}},
+        {"filter": "sharpen",    "params": {"strength": 0.6, "sigma": 1.0}}
+    ]
+}

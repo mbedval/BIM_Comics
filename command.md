@@ -65,6 +65,18 @@ Coarse woodblock relief texture look.
 python3 bis_comic_main.py --storypath images/scene/story1 --preset woodcut --overwrite
 ```
 
+### 11. Anime Style
+Hand-drawn animation style using AnimeGANv2 style transfer.
+```bash
+python3 bis_comic_main.py --storypath images/scene/story1 --preset anime --overwrite
+```
+
+### 12. Cartoon Style
+Stylized, painterly cartoon/comic illustrations using Satoshi Kon's Paprika style transfer.
+```bash
+python3 bis_comic_main.py --storypath images/scene/story1 --preset cartoon --overwrite
+```
+
 ---
 
 ## 4. Execution Modifiers (Performance & Logging)

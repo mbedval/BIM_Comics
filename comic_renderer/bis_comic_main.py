@@ -21,6 +21,7 @@ from tqdm import tqdm
 from tqdm.contrib.logging import logging_redirect_tqdm
 
 from comic_renderer.config.settings import IOConfig, LoggingConfig, RunConfig
+from comic_renderer.filters.anime import AnimeFilter
 from comic_renderer.filters.bilateral import BilateralFilter
 from comic_renderer.filters.blend import BlendFilter
 from comic_renderer.filters.clahe import CLAHEFilter
@@ -32,6 +33,7 @@ from comic_renderer.filters.morphology import MorphologyFilter
 from comic_renderer.filters.passthrough import PassThroughFilter
 from comic_renderer.filters.posterize import PosterizeFilter
 from comic_renderer.filters.registry import FilterRegistry
+from comic_renderer.filters.saturation import SaturationFilter
 from comic_renderer.filters.sharpen import SharpenFilter
 from comic_renderer.filters.texture import TextureFilter
 from comic_renderer.filters.tonecurve import ToneCurveFilter
@@ -295,6 +297,9 @@ def _build_registry() -> FilterRegistry:
     registry.register(ToneCurveFilter)
     registry.register(VignetteFilter)
     registry.register(HalftoneFilter)
+    # Anime Preset
+    registry.register(AnimeFilter)
+    registry.register(SaturationFilter)
 
     return registry
 

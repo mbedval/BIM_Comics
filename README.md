@@ -64,6 +64,8 @@ Supported presets include:
 - `vintage_print`: Aged paper texture and warm sepia borders.
 - `woodcut`: Coarse woodblock relief texture look.
 - `pencil_comic`: Soft sketch-like look.
+- `anime`: Hand-drawn animation style using AnimeGANv2 style transfer.
+- `cartoon`: Stylized, painterly cartoon/comic illustrations using Satoshi Kon's Paprika style transfer.
 
 ---
 
