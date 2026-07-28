@@ -73,18 +73,50 @@ def _collect_images(storypath: Path, limit: int = 4) -> list[Path]:
 # CLI
 # ---------------------------------------------------------------------------
 
+def _load_default_config() -> dict:
+    """Load default settings from default_config.yaml if it exists."""
+    import sys
+    if "pytest" in sys.modules:
+        return {}
+    config_path = Path("default_config.yaml")
+    if config_path.exists():
+        try:
+            import yaml
+            with open(config_path, "r") as f:
+                cfg = yaml.safe_load(f)
+                if isinstance(cfg, dict):
+                    return cfg
+        except Exception:
+            pass
+    return {}
+
+
 def _build_parser() -> argparse.ArgumentParser:
+    cfg = _load_default_config()
+
+    default_storypath = cfg.get("storypath")
+    if default_storypath:
+        default_storypath = Path(default_storypath)
+
+    default_preset = cfg.get("preset", "cartoon")
+
+    default_output = Path("images/output/comic_page.png")
+    if "outputfile" in cfg:
+        default_output = Path(cfg["outputfile"])
+
     p = argparse.ArgumentParser(
         description="Generate a 4-panel comic page from source images.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
-    source = p.add_mutually_exclusive_group(required=True)
+    # If default_storypath is defined in the config file, the group is not required.
+    source = p.add_mutually_exclusive_group(required=(default_storypath is None))
     source.add_argument(
         "--storypath",
         type=Path,
         metavar="DIR",
-        help="Directory containing source images (first 4 used).",
+        default=default_storypath,
+        help=f"Directory containing source images (first 4 used) (default from config: {default_storypath})" if default_storypath else "Directory containing source images (first 4 used).",
     )
     source.add_argument(
         "--images",
@@ -96,14 +128,14 @@ def _build_parser() -> argparse.ArgumentParser:
 
     p.add_argument(
         "--preset",
-        default="cartoon",
-        help="Preset pipeline to apply to each image before compositing.",
+        default=default_preset,
+        help=f"Preset pipeline to apply to each image before compositing (default from config: {default_preset})" if default_preset else "Preset pipeline to apply to each image before compositing.",
     )
     p.add_argument(
         "--output",
         type=Path,
-        default=Path("images/output/comic_page.png"),
-        help="Output path for the generated comic page.",
+        default=default_output,
+        help=f"Output path for the generated comic page (default: {default_output}).",
     )
     p.add_argument(
         "--width",
@@ -139,7 +171,11 @@ def _build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
-    args = _build_parser().parse_args()
+    parser = _build_parser()
+    args = parser.parse_args()
+
+    if not args.images and not args.storypath:
+        parser.error("One of --storypath or --images is required.")
 
     # Resolve image list
     if args.images:

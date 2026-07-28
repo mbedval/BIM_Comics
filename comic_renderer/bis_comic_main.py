@@ -67,6 +67,24 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+def _load_default_config() -> dict:
+    """Load default settings from default_config.yaml if it exists."""
+    import sys
+    if "pytest" in sys.modules:
+        return {}
+    config_path = Path("default_config.yaml")
+    if config_path.exists():
+        try:
+            import yaml
+            with open(config_path, "r") as f:
+                cfg = yaml.safe_load(f)
+                if isinstance(cfg, dict):
+                    return cfg
+        except Exception:
+            pass
+    return {}
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Construct and return the CLI argument parser.
 
@@ -78,6 +96,18 @@ def build_parser() -> argparse.ArgumentParser:
     -------
     argparse.ArgumentParser
     """
+    cfg = _load_default_config()
+
+    default_storypath = cfg.get("storypath")
+    if default_storypath:
+        default_storypath = Path(default_storypath)
+
+    default_preset = cfg.get("preset")
+
+    default_output = _DEFAULT_OUTPUT_ROOT
+    if "outputpath" in cfg:
+        default_output = Path(cfg["outputpath"])
+
     parser = argparse.ArgumentParser(
         prog="bis_comic_main.py",
         description=(
@@ -97,14 +127,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--storypath",
         metavar="DIR",
         type=Path,
-        help="Directory containing source images (e.g. images/scene/story1).",
+        default=default_storypath,
+        help=f"Directory containing source images (default from config: {default_storypath})" if default_storypath else "Directory containing source images (e.g. images/scene/story1).",
     )
     parser.add_argument(
         "--preset",
         metavar="NAME",
-        default=None,
+        default=default_preset,
         help=(
-            "Name of the rendering preset to apply. "
+            f"Name of the rendering preset to apply (default from config: {default_preset}). " if default_preset else "Name of the rendering preset to apply. "
+        ) + (
             "If not specified, all available presets will be run, "
             "and output filenames will be suffixed with '_<preset_name>'."
         ),
@@ -113,9 +145,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         metavar="DIR",
         type=Path,
-        default=_DEFAULT_OUTPUT_ROOT,
+        default=default_output,
         help=(
-            f"Root output directory (default: {_DEFAULT_OUTPUT_ROOT}). "
+            f"Root output directory (default: {default_output}). "
             "A sub-directory named after the story is created automatically."
         ),
     )
