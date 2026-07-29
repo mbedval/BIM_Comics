@@ -4,10 +4,10 @@
 #   - make_comic_page.py
 
 # Default directory containing source images
-storypath: "images/scene/story_test"
+storypath: "images/input/story1"
 
 # Default rendering preset to apply (e.g., cartoon, anime, noir, newspaper, etc.)
-preset: "cartoon"
+preset: "all"
 
 # Default root output directory for bis_comic_main.py
 outputpath: "images/output"

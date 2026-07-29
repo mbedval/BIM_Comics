@@ -53,7 +53,7 @@ PROJECT GOAL
 Input
 
 images/
-    scene/
+    input/
         story1/
             001.jpg
             002.jpg
@@ -62,8 +62,8 @@ images/
 Command
 
 python bis_comic_main.py \
-    --storypath images/scene/story1 \
-    --preset graphic_novel
+    --storypath images/input/story1 \
+    --preset noir
 
 Output
 

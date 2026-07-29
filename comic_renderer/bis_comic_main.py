@@ -2,7 +2,7 @@
 
 Usage
 -----
-    python bis_comic_main.py --storypath images/scene/story1 --preset noir
+    python bis_comic_main.py --storypath images/input/story1 --preset noir
 
 Run ``python bis_comic_main.py --help`` for the full option reference.
 """
@@ -117,7 +117,7 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            "  python bis_comic_main.py --storypath images/scene/story1 --preset noir\n"
+            "  python bis_comic_main.py --storypath images/input/story1 --preset noir\n"
             "  python bis_comic_main.py --list-presets\n"
         ),
     )
@@ -128,7 +128,7 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="DIR",
         type=Path,
         default=default_storypath,
-        help=f"Directory containing source images (default from config: {default_storypath})" if default_storypath else "Directory containing source images (e.g. images/scene/story1).",
+        help=f"Directory containing source images (default from config: {default_storypath})" if default_storypath else "Directory containing source images (e.g. images/input/story1).",
     )
     parser.add_argument(
         "--preset",
@@ -156,8 +156,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--overwrite",
         action="store_true",
-        default=False,
-        help="Overwrite existing output files (default: skip them).",
+        default=True,
+        help="Overwrite existing output files (default: True).",
+    )
+    parser.add_argument(
+        "--no-overwrite",
+        action="store_false",
+        dest="overwrite",
+        help="Skip rendering if output files already exist.",
     )
     parser.add_argument(
         "--verbose",
@@ -257,7 +263,7 @@ def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) ->
     except FileNotFoundError:
         available = []
 
-    if args.preset is not None and args.preset not in available:
+    if args.preset is not None and args.preset != "all" and args.preset not in available:
         parser.error(
             f"Unknown preset {args.preset!r}. "
             f"Available presets: {available}. "
@@ -461,7 +467,7 @@ def process_story(run_config: RunConfig) -> int:
     logger.info("Overwrite   : %s", io_cfg.overwrite)
 
     # Determine presets to run
-    if run_config.preset_name is None:
+    if run_config.preset_name is None or run_config.preset_name == "all":
         try:
             loader = PresetLoader(presets_dir=_PRESETS_DIR)
             presets_to_run = loader.list_available()

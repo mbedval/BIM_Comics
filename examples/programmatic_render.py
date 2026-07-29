@@ -54,7 +54,7 @@ def generate_synthetic_image(h: int = 400, w: int = 600) -> np.ndarray:
 
 def main() -> None:
     # 1. Define paths
-    input_path = Path("images/scene/story1/mb.jpg")
+    input_path = Path("images/input/story1/mb.jpg")
     output_dir = Path("images/output/programmatic")
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / "programmatic_render.png"
