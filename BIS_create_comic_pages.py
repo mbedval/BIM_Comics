@@ -1,24 +1,24 @@
 #!/usr/bin/env python3
-"""make_comic_page.py – CLI for generating a 4-panel comic page.
+"""BIS_create_comic_pages.py – CLI for generating a 4-panel comic page.
 
 Usage
 -----
-    python3 make_comic_page.py \\
-        --storypath images/input/story_test \\
-        --preset cartoon \\
+    python3 BIS_create_comic_pages.py \
+        --storypath images/input/story_test \
+        --preset cartoon \
         --output images/output/comic_page.png
 
     # Skip background removal (faster, for quick previews):
-    python3 make_comic_page.py \\
-        --storypath images/input/story_test \\
-        --preset cartoon \\
-        --no-bg-removal \\
+    python3 BIS_create_comic_pages.py \
+        --storypath images/input/story_test \
+        --preset cartoon \
+        --no-bg-removal \
         --output images/output/comic_page_preview.png
 
     # Use specific images instead of a storypath:
-    python3 make_comic_page.py \\
-        --images img1.jpg img2.jpg img3.jpg img4.jpg \\
-        --preset cartoon \\
+    python3 BIS_create_comic_pages.py \
+        --images img1.jpg img2.jpg img3.jpg img4.jpg \
+        --preset cartoon \
         --output images/output/comic_page.png
 """
 
@@ -37,7 +37,7 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-8s | %(name)s | %(message)s",
     datefmt="%H:%M:%S",
 )
-logger = logging.getLogger("make_comic_page")
+logger = logging.getLogger("BIS_create_comic_pages")
 
 # Supported image extensions
 _IMG_EXTS = {".jpg", ".jpeg", ".png", ".bmp", ".tiff", ".webp"}
@@ -96,7 +96,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
     default_preset = cfg.get("preset", "cartoon")
 
-    default_output = Path("images/output/comic_page.png")
+    default_output = Path("images/output/comicspage/comic_page.png")
     if "outputfile" in cfg:
         default_output = Path(cfg["outputfile"])
 

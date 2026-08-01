@@ -1,0 +1,14 @@
+{
+    "name": "expressive_graphite",
+    "description": "Expressive Graphite Reportage: dynamic hand-drawn graphite with loose construction lines, selective rendering, and rich paper texture.",
+    "version": "1.0",
+    "pipeline": [
+        {"filter": "grayscale",  "params": {"method": "luminance"}},
+        {"filter": "clahe",      "params": {"clip_limit": 5.0, "tile_grid_size": [12, 12]}},
+        {"filter": "tonecurve",  "params": {"points": [[0, 0], [30, 70], [70, 110], [120, 150], [180, 230], [255, 255]]}},
+        {"filter": "edge",       "params": {"method": "sobel", "ksize": 3, "blend_strength": 0.75, "blur_radius": 1}},
+        {"filter": "sharpen",    "params": {"strength": 1.2, "kernel_size": 3, "sigma": 1.0}},
+        {"filter": "contrast",   "params": {"alpha": 1.25, "beta": -5}},
+        {"filter": "texture",    "params": {"mode": "paper", "strength": 0.25, "seed": 1337}}
+    ]
+}

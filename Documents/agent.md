@@ -258,3 +258,7 @@ Each filter should be executable independently.
 Each preset should be testable independently.
 
 --------------------------------------------------
+PANEL GEOMETRY RULE
+
+The outer left and right edges of all comic panels shall remain vertical and parallel to the page border. Only the shared boundary between adjacent panels may be diagonal. Under no circumstances may a panel become trapezoidal, tapered, or detached from the working area's side boundaries.
+--------------------------------------------------

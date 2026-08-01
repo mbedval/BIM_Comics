@@ -2,7 +2,7 @@
 
 This thin wrapper exists so that the user can run:
 
-    python bis_comic_main.py --storypath images/input/story1 --preset noir
+    python BIS_convert_image.py --storypath images/input/story1 --preset noir
 
 from the project root without having to set PYTHONPATH or use
 ``python -m comic_renderer.bis_comic_main``.

@@ -1,7 +1,7 @@
 # Default Configuration for BIM Comics Renderers
 # These settings will be loaded as defaults for both:
-#   - bis_comic_main.py
-#   - make_comic_page.py
+#   - BIS_convert_image.py
+#   - BIS_create_comic_pages.py
 
 # Default directory containing source images
 storypath: "images/input/story1"
@@ -9,8 +9,8 @@ storypath: "images/input/story1"
 # Default rendering preset to apply (e.g., cartoon, anime, noir, newspaper, etc.)
 preset: "all"
 
-# Default root output directory for bis_comic_main.py
+# Default root output directory for BIS_convert_image.py
 outputpath: "images/output"
 
-# Default output file path for make_comic_page.py
-outputfile: "images/output/comic_page.png"
+# Default output file path for BIS_create_comic_pages.py
+outputfile: "images/output/comicspage/comic_page.png"

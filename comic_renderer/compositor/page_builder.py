@@ -27,6 +27,9 @@ from comic_renderer.compositor.layout import PageLayout, build_layout
 
 logger = logging.getLogger(__name__)
 
+# Global cache to reuse background removal across multiple presets (speeds up `--preset all` runs)
+_BG_REMOVAL_CACHE: dict[Path, Image.Image] = {}
+
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -185,19 +188,19 @@ def _draw_to_be_continued(canvas: Image.Image, poly: list[tuple[int, int]], is_b
 
 
 def get_instagram_layout(W: int, H: int, b: int, layout_type: int) -> list[dict]:
-    """Generate 2-panel polygon coordinates for creative cuts (trapezoid, rhombus, parallelogram)."""
+    """Generate 2-panel polygon coordinates ensuring vertical parallel outer side edges."""
     if layout_type == 0:
-        # Layout matching input_file_0.png (slanted side trapezoid and parallelogram cuts)
-        poly0 = [(180, 20), (900, 20), (990, 950), (150, 950)]
-        poly1 = [(150, 970), (990, 970), (860, 1900), (50, 1900)]
-    elif layout_type == 1:
-        # Layout matching input_file_1.png / input_file_2.png (full width cuts)
+        # Rising diagonal divider
         poly0 = [(20, 20), (W-20, 20), (W-20, 1020), (20, 900)]
         poly1 = [(20, 920), (W-20, 1040), (W-20, H-20), (20, H-20)]
-    else:
-        # Reverse slanted full width cuts
+    elif layout_type == 1:
+        # Falling diagonal divider
         poly0 = [(20, 20), (W-20, 20), (W-20, 900), (20, 1020)]
         poly1 = [(20, 1040), (W-20, 920), (W-20, H-20), (20, H-20)]
+    else:
+        # Steep rising diagonal divider
+        poly0 = [(20, 20), (W-20, 20), (W-20, 1080), (20, 840)]
+        poly1 = [(20, 860), (W-20, 1100), (W-20, H-20), (20, H-20)]
 
     def get_bbox(poly):
         xs = [pt[0] for pt in poly]
@@ -331,8 +334,17 @@ class ComicPageBuilder:
                 if self._skip_bg_removal:
                     subject_rgba = pil_rgb.convert("RGBA")
                 else:
-                    logger.info("    Removing background…")
-                    subject_rgba = remove_background(pil_rgb)
+                    if img_path not in _BG_REMOVAL_CACHE:
+                        logger.info("    Removing background (first time for '%s')…", img_path.name)
+                        # Load original raw image to ensure we compute background removal on unstylized source
+                        raw_rgb = _load_rgb(img_path)
+                        raw_pil = Image.fromarray(raw_rgb.astype(np.uint8), mode="RGB")
+                        _BG_REMOVAL_CACHE[img_path] = remove_background(raw_pil)
+                    
+                    # Combine the stylized RGB image with the precomputed alpha mask
+                    raw_rgba = _BG_REMOVAL_CACHE[img_path]
+                    alpha_mask = raw_rgba.split()[3]
+                    subject_rgba = Image.merge("RGBA", pil_rgb.split() + (alpha_mask,))
                     subject_rgba = _crop_subject_bounds(subject_rgba)
 
                 # 4. Generate panel dimensions and dynamic background design
