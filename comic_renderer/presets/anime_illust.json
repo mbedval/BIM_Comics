@@ -1,0 +1,17 @@
+{
+    "name": "anime_illust",
+    "description": "Modern anime illustration style: clean lineart, soft cell shading, warm color tones, and smooth gradients.",
+    "version": "1.0",
+    "pipeline": [
+        {
+            "filter": "anime",
+            "params": {
+                "model_path": "comic_renderer/weights/AnimeGANv2_Hayao.onnx"
+            }
+        },
+        {"filter": "saturation", "params": {"scale": 1.25}},
+        {"filter": "contrast",   "params": {"alpha": 1.1, "beta": 2}},
+        {"filter": "edge",       "params": {"method": "canny", "low_threshold": 40, "high_threshold": 110, "blend_strength": 0.4, "blur_radius": 1}},
+        {"filter": "sharpen",    "params": {"strength": 0.4, "sigma": 1.0}}
+    ]
+}

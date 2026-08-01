@@ -31,10 +31,10 @@ The package provides a command-line script to batch-process folders of images (s
 
 ```bash
 # Basic usage
-python bis_comic_main.py --storypath images/scene/story1 --preset noir
+python bis_comic_main.py --storypath images/input/story1 --preset noir
 
 # Overwrite existing renders, process with 4 workers in parallel, print debug details
-python bis_comic_main.py --storypath images/scene/story1 --preset noir --overwrite --jobs 4 --verbose
+python bis_comic_main.py --storypath images/input/story1 --preset noir --overwrite --jobs 4 --verbose
 ```
 
 ### CLI Arguments Reference

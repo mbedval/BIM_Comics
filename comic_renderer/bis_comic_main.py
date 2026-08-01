@@ -2,7 +2,7 @@
 
 Usage
 -----
-    python bis_comic_main.py --storypath images/scene/story1 --preset noir
+    python bis_comic_main.py --storypath images/input/story1 --preset noir
 
 Run ``python bis_comic_main.py --help`` for the full option reference.
 """
@@ -67,6 +67,24 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 
+def _load_default_config() -> dict:
+    """Load default settings from default_config.yaml if it exists."""
+    import sys
+    if "pytest" in sys.modules:
+        return {}
+    config_path = Path("default_config.yaml")
+    if config_path.exists():
+        try:
+            import yaml
+            with open(config_path, "r") as f:
+                cfg = yaml.safe_load(f)
+                if isinstance(cfg, dict):
+                    return cfg
+        except Exception:
+            pass
+    return {}
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Construct and return the CLI argument parser.
 
@@ -78,6 +96,18 @@ def build_parser() -> argparse.ArgumentParser:
     -------
     argparse.ArgumentParser
     """
+    cfg = _load_default_config()
+
+    default_storypath = cfg.get("storypath")
+    if default_storypath:
+        default_storypath = Path(default_storypath)
+
+    default_preset = cfg.get("preset")
+
+    default_output = _DEFAULT_OUTPUT_ROOT
+    if "outputpath" in cfg:
+        default_output = Path(cfg["outputpath"])
+
     parser = argparse.ArgumentParser(
         prog="bis_comic_main.py",
         description=(
@@ -87,7 +117,7 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=(
             "Examples:\n"
-            "  python bis_comic_main.py --storypath images/scene/story1 --preset noir\n"
+            "  python bis_comic_main.py --storypath images/input/story1 --preset noir\n"
             "  python bis_comic_main.py --list-presets\n"
         ),
     )
@@ -97,14 +127,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--storypath",
         metavar="DIR",
         type=Path,
-        help="Directory containing source images (e.g. images/scene/story1).",
+        default=default_storypath,
+        help=f"Directory containing source images (default from config: {default_storypath})" if default_storypath else "Directory containing source images (e.g. images/input/story1).",
     )
     parser.add_argument(
         "--preset",
         metavar="NAME",
-        default=None,
+        default=default_preset,
         help=(
-            "Name of the rendering preset to apply. "
+            f"Name of the rendering preset to apply (default from config: {default_preset}). " if default_preset else "Name of the rendering preset to apply. "
+        ) + (
             "If not specified, all available presets will be run, "
             "and output filenames will be suffixed with '_<preset_name>'."
         ),
@@ -113,9 +145,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--output",
         metavar="DIR",
         type=Path,
-        default=_DEFAULT_OUTPUT_ROOT,
+        default=default_output,
         help=(
-            f"Root output directory (default: {_DEFAULT_OUTPUT_ROOT}). "
+            f"Root output directory (default: {default_output}). "
             "A sub-directory named after the story is created automatically."
         ),
     )
@@ -124,8 +156,14 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--overwrite",
         action="store_true",
-        default=False,
-        help="Overwrite existing output files (default: skip them).",
+        default=True,
+        help="Overwrite existing output files (default: True).",
+    )
+    parser.add_argument(
+        "--no-overwrite",
+        action="store_false",
+        dest="overwrite",
+        help="Skip rendering if output files already exist.",
     )
     parser.add_argument(
         "--verbose",
@@ -225,7 +263,7 @@ def _validate_args(args: argparse.Namespace, parser: argparse.ArgumentParser) ->
     except FileNotFoundError:
         available = []
 
-    if args.preset is not None and args.preset not in available:
+    if args.preset is not None and args.preset != "all" and args.preset not in available:
         parser.error(
             f"Unknown preset {args.preset!r}. "
             f"Available presets: {available}. "
@@ -429,7 +467,7 @@ def process_story(run_config: RunConfig) -> int:
     logger.info("Overwrite   : %s", io_cfg.overwrite)
 
     # Determine presets to run
-    if run_config.preset_name is None:
+    if run_config.preset_name is None or run_config.preset_name == "all":
         try:
             loader = PresetLoader(presets_dir=_PRESETS_DIR)
             presets_to_run = loader.list_available()

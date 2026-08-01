@@ -26,24 +26,24 @@ Color = Tuple[int, int, int]
 # ---------------------------------------------------------------------------
 PANEL_STYLES: list[dict] = [
     {
-        "bg_color": (255, 95, 162),       # Hot Pink
-        "pattern_color": (220, 40, 110),  # Deep Pink
+        "bg_color": (255, 200, 220),       # Light Vibrant Pink
+        "pattern_color": (255, 110, 160),  # Hot Pink
         "pattern": "halftone",
     },
     {
-        "bg_color": (232, 48, 48),        # Vivid Red
-        "pattern_color": (168, 24, 24),   # Dark Red
-        "pattern": "halftone",
-    },
-    {
-        "bg_color": (76, 209, 55),        # Lime Green
-        "pattern_color": (39, 174, 96),   # Forest Green
-        "pattern": "halftone",
-    },
-    {
-        "bg_color": (14, 165, 233),       # Sky Blue
-        "pattern_color": (0, 112, 192),   # Mid Blue
+        "bg_color": (255, 245, 180),       # Light Creamy Gold
+        "pattern_color": (255, 195, 0),    # Vibrant Yellow Gold
         "pattern": "sunburst",
+    },
+    {
+        "bg_color": (210, 250, 210),       # Light Neon Mint
+        "pattern_color": (46, 204, 113),   # Vibrant Emerald Green
+        "pattern": "halftone",
+    },
+    {
+        "bg_color": (200, 235, 255),       # Light Sky Blue
+        "pattern_color": (52, 152, 219),   # Vibrant Dodger Blue
+        "pattern": "halftone",
     },
 ]
 
@@ -59,8 +59,9 @@ def halftone_background(
     dot_color: Color,
     spacing: int = 28,
     dot_radius_fraction: float = 0.35,
+    shape: str = "circle",
 ) -> Image.Image:
-    """Return a RGB PIL Image with a halftone dot grid pattern.
+    """Return a RGB PIL Image with a halftone grid pattern of varying shapes, super-sampled for crisp edges.
 
     Parameters
     ----------
@@ -74,21 +75,43 @@ def halftone_background(
         Grid cell size in pixels. Dots are centred in each cell.
     dot_radius_fraction:
         Dot radius as a fraction of spacing (0 < f < 0.5).
+    shape:
+        Pattern shape ("circle", "square", "triangle", "diamond").
     """
-    img = Image.new("RGB", (width, height), bg_color)
+    factor = 3
+    ss_width = width * factor
+    ss_height = height * factor
+    ss_spacing = spacing * factor
+
+    img = Image.new("RGB", (ss_width, ss_height), bg_color)
     draw = ImageDraw.Draw(img)
 
-    radius = int(spacing * dot_radius_fraction)
+    radius = int(ss_spacing * dot_radius_fraction)
     # Offset every other row for a classic halftone stagger
-    for row_idx, y in enumerate(range(0, height + spacing, spacing)):
-        x_offset = spacing // 2 if row_idx % 2 else 0
-        for x in range(-spacing + x_offset, width + spacing, spacing):
-            draw.ellipse(
-                [x - radius, y - radius, x + radius, y + radius],
-                fill=dot_color,
-            )
+    for row_idx, y in enumerate(range(0, ss_height + ss_spacing, ss_spacing)):
+        x_offset = ss_spacing // 2 if row_idx % 2 else 0
+        for x in range(-ss_spacing + x_offset, ss_width + ss_spacing, ss_spacing):
+            if shape == "square":
+                draw.rectangle([x - radius, y - radius, x + radius, y + radius], fill=dot_color)
+            elif shape == "triangle":
+                h_offset = int(radius * 0.866)
+                p1 = (x, y - radius)
+                p2 = (x - h_offset, y + radius // 2)
+                p3 = (x + h_offset, y + radius // 2)
+                draw.polygon([p1, p2, p3], fill=dot_color)
+            elif shape == "diamond":
+                p1 = (x, y - radius)
+                p2 = (x - radius, y)
+                p3 = (x, y + radius)
+                p4 = (x + radius, y)
+                draw.polygon([p1, p2, p3, p4], fill=dot_color)
+            else: # "circle"
+                draw.ellipse(
+                    [x - radius, y - radius, x + radius, y + radius],
+                    fill=dot_color,
+                )
 
-    return img
+    return img.resize((width, height), Image.Resampling.LANCZOS)
 
 
 # ---------------------------------------------------------------------------
@@ -101,10 +124,10 @@ def sunburst_background(
     bg_color: Color,
     ray_color: Color,
     num_rays: int = 24,
-    cx_frac: float = 0.5,
-    cy_frac: float = 0.5,
+    cx_frac: float = -0.1,
+    cy_frac: float = 1.1,
 ) -> Image.Image:
-    """Return a RGB PIL Image with alternating sunburst rays.
+    """Return a RGB PIL Image with swept-diagonal rays, super-sampled for high anti-aliasing.
 
     Parameters
     ----------
@@ -115,27 +138,29 @@ def sunburst_background(
     ray_color:
         Colour of the primary rays.
     num_rays:
-        Total number of rays (half will be bg_color, half ray_color).
+        Total number of rays.
     cx_frac, cy_frac:
-        Fractional position of the burst centre (0–1).
+        Position of ray origin, defaults to off-screen bottom-left for a swept look.
     """
-    img = Image.new("RGB", (width, height), bg_color)
+    factor = 3
+    ss_width = width * factor
+    ss_height = height * factor
+
+    img = Image.new("RGB", (ss_width, ss_height), bg_color)
     draw = ImageDraw.Draw(img)
 
-    cx = width * cx_frac
-    cy = height * cy_frac
-    # Diagonal of the image guarantees rays reach all corners
-    radius = math.hypot(width, height)
+    cx = ss_width * cx_frac
+    cy = ss_height * cy_frac
+    radius = math.hypot(ss_width, ss_height) * 1.5
 
     angle_step = 2 * math.pi / num_rays
 
     for i in range(num_rays):
         if i % 2 == 0:
-            continue  # bg_color rays are already the background fill
+            continue
         angle_start = i * angle_step - angle_step / 2
         angle_end   = i * angle_step + angle_step / 2
 
-        # Build polygon: centre + two far edge points
         pts = [
             (cx, cy),
             (cx + radius * math.cos(angle_start), cy + radius * math.sin(angle_start)),
@@ -143,7 +168,7 @@ def sunburst_background(
         ]
         draw.polygon(pts, fill=ray_color)
 
-    return img
+    return img.resize((width, height), Image.Resampling.LANCZOS)
 
 
 # ---------------------------------------------------------------------------
@@ -163,4 +188,6 @@ def make_panel_background(
     if style["pattern"] == "sunburst":
         return sunburst_background(width, height, bg, pat)
     else:
-        return halftone_background(width, height, bg, pat)
+        shapes = ["circle", "square", "triangle", "square"]
+        shape = shapes[style_index % len(shapes)]
+        return halftone_background(width, height, bg, pat, shape=shape)

@@ -51,13 +51,13 @@ class TestCompositor(unittest.TestCase):
             pass
 
     def test_page_builder_preview(self):
-        # Create 4 dummy files to test layout building
+        # Create 6 dummy files to test layout building with multiple pages and partial pages
         test_dir = Path("comic_renderer/tests/temp_test_panels")
         test_dir.mkdir(parents=True, exist_ok=True)
         img_paths = []
-        for i in range(4):
+        for i in range(6):
             p = test_dir / f"panel_{i}.png"
-            dummy_img = Image.new("RGB", (100, 100), (50 * i, 100, 150))
+            dummy_img = Image.new("RGB", (100, 100), (40 * i, 100, 150))
             dummy_img.save(p)
             img_paths.append(p)
 
@@ -71,12 +71,27 @@ class TestCompositor(unittest.TestCase):
         )
         builder.build(img_paths, output_path)
 
-        self.assertTrue(output_path.exists())
-        out_img = Image.open(output_path)
-        self.assertEqual(out_img.size, (400, 300))
+        # Check page 1 output
+        page1_path = test_dir / "output_page_page1.png"
+        self.assertTrue(page1_path.exists())
+        out_img1 = Image.open(page1_path)
+        self.assertEqual(out_img1.size, (400, 300))
+
+        # Check page 2 output
+        page2_path = test_dir / "output_page_page2.png"
+        self.assertTrue(page2_path.exists())
+        out_img2 = Image.open(page2_path)
+        self.assertEqual(out_img2.size, (400, 300))
+
+        # Check page 3 output (2 panels)
+        page3_path = test_dir / "output_page_page3.png"
+        self.assertTrue(page3_path.exists())
+        out_img3 = Image.open(page3_path)
+        self.assertEqual(out_img3.size, (400, 300))
 
         # Cleanup
-        for p in img_paths:
-            p.unlink()
-        output_path.unlink()
+        for p in test_dir.iterdir():
+            if p.is_file():
+                p.unlink()
         test_dir.rmdir()
+

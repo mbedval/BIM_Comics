@@ -45,9 +45,14 @@ class TestBuildParser:
         args = parser.parse_args(["--storypath", "/tmp/x"])
         assert args.preset is None
 
-    def test_default_overwrite_is_false(self) -> None:
+    def test_default_overwrite_is_true(self) -> None:
         parser = build_parser()
         args = parser.parse_args(["--storypath", "/tmp/x"])
+        assert args.overwrite is True
+
+    def test_no_overwrite_sets_false(self) -> None:
+        parser = build_parser()
+        args = parser.parse_args(["--storypath", "/tmp/x", "--no-overwrite"])
         assert args.overwrite is False
 
     def test_verbose_flag_sets_attribute(self) -> None:
@@ -147,22 +152,22 @@ class TestMainEndToEnd:
         ])
         first_mtime = (output / "story3" / "001.png").stat().st_mtime
 
-        # Second run without --overwrite (should skip)
+        # Second run with --no-overwrite (should skip)
         main([
             "--storypath", str(story),
             "--output", str(output),
             "--preset", "noir",
+            "--no-overwrite",
         ])
         second_mtime = (output / "story3" / "001.png").stat().st_mtime
         assert first_mtime == second_mtime  # Not touched
 
-        # Third run with --overwrite
+        # Third run without --no-overwrite (should overwrite by default)
         import time; time.sleep(0.05)  # Ensure mtime resolution
         main([
             "--storypath", str(story),
             "--output", str(output),
             "--preset", "noir",
-            "--overwrite",
         ])
         third_mtime = (output / "story3" / "001.png").stat().st_mtime
         assert third_mtime > first_mtime  # Was replaced

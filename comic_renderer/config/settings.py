@@ -36,7 +36,7 @@ class IOConfig:
         """Return the output directory for the current story.
 
         The story name is taken from the *last component* of ``story_path``
-        so that ``images/scene/story1`` maps to ``<output_root>/story1``.
+        so that ``images/input/story1`` maps to ``<output_root>/story1``.
         """
         return self.output_root / self.story_path.name
 
